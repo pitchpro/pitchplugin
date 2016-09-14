@@ -61,6 +61,22 @@ if( !class_exists('PitchPro_Pitch') ){
         public function register_post_types(){
             register_post_type( self::POSTTYPE, apply_filters( 'pitchpro/pitch_post_types', $this->postTypeArgs ) );
             add_rewrite_rule( self::URL_PREFIX . '(.+?)(?:/([0-9]+))?/?$', 'index.php?' . self::POSTTYPE . '=$matches[1]&page=$matches[2]', 'top' );
+            register_post_status( 'sent', array(
+                'label'                     => 'Sent',
+                'public'                    => false,
+                'exclude_from_search'       => true,
+                'show_in_admin_all_list'    => true,
+                'show_in_admin_status_list' => true,
+                'label_count'               => _n_noop( 'Sent <span class="count">(%s)</span>', 'Sent <span class="count">(%s)</span>' ),
+            ) );
+            register_post_status( 'claimed', array(
+                'label'                     => 'Claimed',
+                'public'                    => false,
+                'exclude_from_search'       => true,
+                'show_in_admin_all_list'    => true,
+                'show_in_admin_status_list' => true,
+                'label_count'               => _n_noop( 'Claimed <span class="count">(%s)</span>', 'Claimed <span class="count">(%s)</span>' ),
+            ) );
         }
 
         public function custom_menue(){
@@ -73,14 +89,22 @@ if( !class_exists('PitchPro_Pitch') ){
              $label = '';
              if($post->post_type == self::POSTTYPE){
                   if($post->post_status == 'expire'){
-                       $complete = ' selected="selected"';
-                       $label = '<span id="post-status-display"> Expired</span>';
+                       $expired_complete = ' selected="selected"';
+                       $expired_label = '<span id="post-status-display"> Expired</span>';
+                  }
+                  if($post->post_status == 'sent'){
+                       $sent_complete = ' selected="selected"';
+                       $sent_label = '<span id="post-status-display"> Sent</span>';
+                  }
+                  if($post->post_status == 'claimed'){
+                       $claimed_complete = ' selected="selected"';
+                       $claimed_label = '<span id="post-status-display"> Claimed</span>';
                   }
                   ?>
                   <script>
                   jQuery(document).ready(function($){
-                       $("select#post_status").append('<option value="expire" <?php echo $complete; ?>>Expired</option>');
-                       $(".misc-pub-section label").append('<?php echo $label; ?>');
+                       $("select#post_status").append('<option value="expire" <?php echo $expired_complete; ?>>Expired</option><option value="expire" <?php echo $expired_complete; ?>>Sent</option><option value="expire" <?php echo $claimed_complete; ?>>Claimed</option>');
+                       $(".misc-pub-section label").append('<?php echo $expired_label . $sent_label . $claimed_label; ?>');
                   });
                   </script>
                   <?php
@@ -93,6 +117,16 @@ if( !class_exists('PitchPro_Pitch') ){
              if($arg != 'expire'){
                   if($post->post_status == 'expire'){
                        return array('Expired');
+                  }
+             }
+             if($arg != 'sent'){
+                  if($post->post_status == 'sent'){
+                       return array('Sent');
+                  }
+             }
+             if($arg != 'claimed'){
+                  if($post->post_status == 'claimed'){
+                       return array('Claimed');
                   }
              }
             return $states;
@@ -126,7 +160,7 @@ if( !class_exists('PitchPro_Pitch') ){
         		    //Note : the initial query is stored in another global named $wp_the_query
         		    $wp_query = new WP_Query( array(
                         'post_type' => self::POSTTYPE,
-                        'post_status' => array('publish','expire','draft','pending')
+                        'post_status' => array('publish','sent','claimed','expire','draft','pending')
         		    ));
             	break;
             	default:
@@ -136,7 +170,39 @@ if( !class_exists('PitchPro_Pitch') ){
             }
         }
 
-        public function get_count_associated_to_campaign( $campaign_id = null ){
+
+        public static function get_the_guid( $post_id = null ){
+            $wp_query = new WP_Query(array(
+                'ID' => $post_id,
+                'post_type' => self::POSTTYPE,
+                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+            ));
+            return $wp_query->post->post_name;
+        }
+
+        public static function mark_as_sent( $post_id = null ){
+            $wp_query = new WP_Query(array(
+                'ID' => $post_id,
+                'post_type' => self::POSTTYPE,
+                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+            ));
+            add_post_meta( $post_id, 'sent_on', current_time('mysql') );
+            return wp_update_post( array(
+                'ID' => $post_id,
+                'post_status' => 'sent'
+            ), true );
+        }
+
+        public static function retrieve( $guid = null ){
+            $wp_query = new WP_Query(array(
+                'post_name' => $guid,
+                'post_type' => self::POSTTYPE,
+                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+            ));
+            return $wp_query->post;
+        }
+
+        public static function get_count_associated_to_campaign( $campaign_id = null ){
             $count = 0;
             if( !is_null( $campaign_id ) ){
                 $query_pitches = new WP_Query(array(
@@ -170,7 +236,7 @@ if( !class_exists('PitchPro_Pitch') ){
         public function query_pitches(){
             $wp_query = new WP_Query(array(
                 'post_type' => self::POSTTYPE,
-                'post_status' => array('publish','expire','draft','pending')
+                'post_status' => array('publish','sent','claimed','expire','draft','pending')
             ));
             return $wp_query;
         }

@@ -18,6 +18,11 @@
 	    	} else {
 	    		the_content( __( 'Continue Reading &rarr;', 'woothemes' ) );
 	    	}
+
+            echo 'Bounty: $' . money_format('%i', get_field( 'payout_amount', get_the_ID()));
+
+            echo do_shortcode('[gravityform id="4" title="false" description="false" ajax="true"]');
+
 	    ?>
 	</section><!-- /.entry -->
 	<div class="fix"></div>

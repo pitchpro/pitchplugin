@@ -20,8 +20,14 @@ get_header();
             if( !is_user_logged_in() && get_post_status() == 'expire'){
                 pitchpro_get_template_part( 'pitch', 'expired' );
             } else if( is_user_logged_in() ){
-                pitchpro_get_template_part( 'pitch', 'edit' );
-            } else {
+				if(!empty($_REQUEST['edit'])){
+					pitchpro_get_template_part( 'pitch', 'edit' );
+				} else {
+					pitchpro_get_template_part( 'pitch', 'view-admin' );
+				}
+            } else if( get_post_status() == 'claimed' ) {
+				pitchpro_get_template_part( 'pitch', 'claimed' );
+			} else {
                 pitchpro_get_template_part( 'pitch', 'view' );
             }
         }
