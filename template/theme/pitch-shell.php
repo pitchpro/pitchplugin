@@ -18,16 +18,16 @@ get_header();
 	if (have_posts()) { $count = 0;
         while (have_posts()) { the_post(); $count++;
             if( !is_user_logged_in() && get_post_status() == 'expire'){
-                pitchpro_get_template_part( 'pitch', 'expired' );
+                pitchpro_get_template_part( 'pitch', get_post_status() );
             } else if( is_user_logged_in() ){
 				if(!empty($_REQUEST['edit'])){
 					pitchpro_get_template_part( 'pitch', 'edit' );
 				} else {
 					pitchpro_get_template_part( 'pitch', 'view-admin' );
 				}
-            } else if( get_post_status() == 'claimed' ) {
+            } else if( in_array( get_post_status(), array( 'claim', 'accept', 'decline' )) ){
 				pitchpro_get_template_part( 'pitch', 'claimed' );
-			} else {
+			} else if ( get_post_status() == 'sent' ) {
                 pitchpro_get_template_part( 'pitch', 'view' );
             }
         }

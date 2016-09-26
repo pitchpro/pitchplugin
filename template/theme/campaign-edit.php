@@ -11,7 +11,7 @@
 	<section class="entry">
 	    <?php
 
-        echo do_shortcode('[gravityform id="2" update]');
+        echo do_shortcode('[gravityform id="2" title="false" description="false" update]');
 
 	    ?>
 	</section><!-- /.entry -->

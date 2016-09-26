@@ -47,3 +47,9 @@ pitchpro_file_loader([
 	'lib/startup',
 	'lib/pre-get-posts'
 ]);
+
+if( function_exists('acf_add_options_page') ) {
+
+	acf_add_options_page('PitchPro Settings');
+
+}

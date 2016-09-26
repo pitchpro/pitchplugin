@@ -9,6 +9,14 @@ if( !class_exists('PitchPro_Pitch') ){
 
         private static $_this;
         public $path;
+        static $pitch_status = array(
+            'publish' => 'Not Sent',
+            'sent' => 'Sent',
+            'claim' => 'Claimed',
+            'accept' => 'Accepted',
+            'decline' => 'Declined',
+            'expire' => 'Expired'
+        );
         protected $postTypeArgs = array(
 			'public'          => true,
 			'rewrite'         => array( 'slug' => self::URL_PREFIX, 'with_front' => false ),
@@ -56,6 +64,8 @@ if( !class_exists('PitchPro_Pitch') ){
             add_action( 'template_redirect', array( $this, 'template_redirect' ), 20 );
             add_action( 'admin_footer-post.php', array( $this, 'custom_post_status_list' ) );
             add_filter( 'display_post_states', array( $this, 'custom_display_archive_state' ) );
+            add_filter( 'gform_field_value_pitch_decision_guid', array( $this, 'gform_populate_pitch_decision_guid') );
+            add_filter( 'gform_field_value_incentive_amount', array( $this, 'gform_populate_pitch_incentive_amount') );
         }
 
         public function register_post_types(){
@@ -69,7 +79,23 @@ if( !class_exists('PitchPro_Pitch') ){
                 'show_in_admin_status_list' => true,
                 'label_count'               => _n_noop( 'Sent <span class="count">(%s)</span>', 'Sent <span class="count">(%s)</span>' ),
             ) );
-            register_post_status( 'claimed', array(
+            register_post_status( 'claim', array(
+                'label'                     => 'Claimed',
+                'public'                    => false,
+                'exclude_from_search'       => true,
+                'show_in_admin_all_list'    => true,
+                'show_in_admin_status_list' => true,
+                'label_count'               => _n_noop( 'Claimed <span class="count">(%s)</span>', 'Claimed <span class="count">(%s)</span>' ),
+            ) );
+            register_post_status( 'accept', array(
+                'label'                     => 'Claimed',
+                'public'                    => false,
+                'exclude_from_search'       => true,
+                'show_in_admin_all_list'    => true,
+                'show_in_admin_status_list' => true,
+                'label_count'               => _n_noop( 'Claimed <span class="count">(%s)</span>', 'Claimed <span class="count">(%s)</span>' ),
+            ) );
+            register_post_status( 'decline', array(
                 'label'                     => 'Claimed',
                 'public'                    => false,
                 'exclude_from_search'       => true,
@@ -96,15 +122,25 @@ if( !class_exists('PitchPro_Pitch') ){
                        $sent_complete = ' selected="selected"';
                        $sent_label = '<span id="post-status-display"> Sent</span>';
                   }
-                  if($post->post_status == 'claimed'){
-                       $claimed_complete = ' selected="selected"';
-                       $claimed_label = '<span id="post-status-display"> Claimed</span>';
+                  if($post->post_status == 'claim'){
+                       $claim_complete = ' selected="selected"';
+                       $claim_label = '<span id="post-status-display"> Claimed</span>';
                   }
+                  if($post->post_status == 'accept'){
+                       $accept_complete = ' selected="selected"';
+                       $accept_label = '<span id="post-status-display"> Accepted</span>';
+                  }
+                  if($post->post_status == 'decline'){
+                       $decline_complete = ' selected="selected"';
+                       $decline_label = '<span id="post-status-display"> Declined</span>';
+                  }
+
+                  // TODO optimize this and fix the errors when undefined
                   ?>
                   <script>
                   jQuery(document).ready(function($){
-                       $("select#post_status").append('<option value="expire" <?php echo $expired_complete; ?>>Expired</option><option value="expire" <?php echo $expired_complete; ?>>Sent</option><option value="expire" <?php echo $claimed_complete; ?>>Claimed</option>');
-                       $(".misc-pub-section label").append('<?php echo $expired_label . $sent_label . $claimed_label; ?>');
+                       $("select#post_status").append('<option value="expire" <?php echo $expired_complete; ?>>Expired</option><option value="sent" <?php echo $expired_complete; ?>>Sent</option><option value="claim" <?php echo $claim_complete; ?>>Claimed</option><option value="accept" <?php echo $accept_complete; ?>>Accepted</option><option value="decline" <?php echo $decline_complete; ?>>Declined</option>');
+                       $(".misc-pub-section label").append('<?php echo $expired_label . $sent_label . $claim_label . $accept_label . $decline_label; ?>');
                   });
                   </script>
                   <?php
@@ -124,9 +160,19 @@ if( !class_exists('PitchPro_Pitch') ){
                        return array('Sent');
                   }
              }
-             if($arg != 'claimed'){
-                  if($post->post_status == 'claimed'){
+             if($arg != 'claim'){
+                  if($post->post_status == 'claim'){
                        return array('Claimed');
+                  }
+             }
+             if($arg != 'decline'){
+                  if($post->post_status == 'decline'){
+                       return array('Declined');
+                  }
+             }
+             if($arg != 'accept'){
+                  if($post->post_status == 'accept'){
+                       return array('Accepted');
                   }
              }
             return $states;
@@ -160,7 +206,7 @@ if( !class_exists('PitchPro_Pitch') ){
         		    //Note : the initial query is stored in another global named $wp_the_query
         		    $wp_query = new WP_Query( array(
                         'post_type' => self::POSTTYPE,
-                        'post_status' => array('publish','sent','claimed','expire','draft','pending')
+                        'post_status' => array('publish','sent','claim', 'accept', 'decline','expire','draft','pending')
         		    ));
             	break;
             	default:
@@ -175,7 +221,7 @@ if( !class_exists('PitchPro_Pitch') ){
             $wp_query = new WP_Query(array(
                 'ID' => $post_id,
                 'post_type' => self::POSTTYPE,
-                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+                'post_status' => array('publish','sent','claim', 'accept', 'decline','expire','draft','pending')
             ));
             return $wp_query->post->post_name;
         }
@@ -184,7 +230,7 @@ if( !class_exists('PitchPro_Pitch') ){
             $wp_query = new WP_Query(array(
                 'ID' => $post_id,
                 'post_type' => self::POSTTYPE,
-                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+                'post_status' => array('publish','sent','claim', 'accept', 'decline','expire','draft','pending')
             ));
             add_post_meta( $post_id, 'sent_on', current_time('mysql') );
             return wp_update_post( array(
@@ -195,9 +241,9 @@ if( !class_exists('PitchPro_Pitch') ){
 
         public static function retrieve( $guid = null ){
             $wp_query = new WP_Query(array(
-                'post_name' => $guid,
+                'name' => $guid,
                 'post_type' => self::POSTTYPE,
-                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+                'post_status' => array('publish','sent','claim', 'accept', 'decline','expire','draft','pending')
             ));
             return $wp_query->post;
         }
@@ -215,6 +261,21 @@ if( !class_exists('PitchPro_Pitch') ){
             return $count;
         }
 
+        public static function get_full_stats( $campaign_id = null ){
+            $stats = array(
+                'total' => 0
+            );
+            if( !is_null( $campaign_id ) ){
+                $query_pitches = new WP_Query(array(
+                    'post_type' => self::POSTTYPE,
+                    'meta_key' => 'associated_campaign',
+                    'meta_value' => $campaign_id
+                ));
+                $stats['total'] = $query_pitches->post_count;
+            }
+            return $stats;
+        }
+
         public function unique_guid_post_name( $slug, $post_ID, $post_status, $post_type ) {
             if ( self::POSTTYPE == $post_type ) {
                 $post = get_post($post_ID);
@@ -225,21 +286,52 @@ if( !class_exists('PitchPro_Pitch') ){
             return $slug;
         }
 
-        public function gform_after_submission( $entry, $form ){
-            $post = get_post( $entry['post_id'] );
-            if( self::POSTTYPE == $post->post_type && ( empty($post->post_name) || !is_valid_guid($post->post_name) ) ){
-                $post->post_name = create_unique_GUIDv4();
-                wp_update_post( $post );
-            }
-        }
-
         public function query_pitches(){
             $wp_query = new WP_Query(array(
                 'post_type' => self::POSTTYPE,
-                'post_status' => array('publish','sent','claimed','expire','draft','pending')
+                'post_status' => array('publish','sent','claim', 'accept', 'decline','expire','draft','pending')
             ));
             return $wp_query;
         }
+
+        public function gform_populate_pitch_decision_guid( $value = null ){
+            $post = get_post(get_the_ID());
+            return $post->post_name;
+        }
+
+        public function gform_populate_pitch_incentive_amount( $value = null){
+            return '$' . money_format('%i', get_field( 'payout_amount', get_the_ID()));
+        }
+
+
+        public function gform_after_submission( $entry, $form ){
+            // create custom guid
+            if( !empty($entry['post_id']) ){
+                $pitch = get_post( $entry['post_id'] );
+                if( self::POSTTYPE == $pitch->post_type && ( empty($pitch->post_name) || !is_valid_guid($pitch->post_name) ) ){
+                    $pitch->post_name = create_unique_GUIDv4();
+                    wp_update_post( $pitch );
+                }
+            }
+            if( $form['title'] == 'Pitch Decision' ){
+                $pitch_status = null;
+                foreach( $form['fields'] as $field){
+                    if( $field->inputName == 'pitch_offer_decision' ){
+                        $pitch_status = $entry[ $field->id ] == 'I Accept' ? 'accept' : 'decline';
+                    }
+                    if( $field->inputName == 'pitch_decision_guid' ){
+                        $pitch_guid = $entry[ $field->id ];
+                    }
+                }
+
+                if( !is_null($pitch_status) ){
+                    $pitch = self::retrieve( $pitch_guid );
+                    $pitch->post_status = $pitch_status;
+                    wp_update_post( $pitch );
+                }
+            }
+        }
+
 
 		/**
 		 * Static Singleton Factory Method

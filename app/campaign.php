@@ -8,6 +8,10 @@ if( !class_exists('PitchPro_Campaign') ){
 
         private static $_this;
         public $path;
+        static $campaign_status = array(
+            'publish' => 'Active',
+            'expire' => 'Expired'
+        );
         protected $postTypeArgs = array(
 			'public'          => true,
 			'rewrite'         => array( 'slug' => self::URL_PREFIX, 'with_front' => false ),
@@ -46,6 +50,7 @@ if( !class_exists('PitchPro_Campaign') ){
 
         function init(){
             add_action( 'init', array( $this, 'register_post_types' ), 1 );
+            add_action( 'widgets_init', array( $this, 'register_sidebar' ) );
             add_action( 'admin_menu', array( $this, 'custom_menue' ), 10 );
             add_filter( 'wp_unique_post_slug', array( $this, 'unique_guid_post_name' ), 10, 4 );
             add_filter( 'template_include', array( $this, 'template_include' ), 99 );
@@ -62,12 +67,48 @@ if( !class_exists('PitchPro_Campaign') ){
             add_rewrite_rule( self::URL_PREFIX . '(.+?)(?:/([0-9]+))?/?$', 'index.php?' . self::POSTTYPE . '=$matches[1]&page=$matches[2]', 'top' );
         }
 
+        public function register_sidebar(){
+            register_sidebar( array(
+            	'name'          => 'Edit Campaign',
+            	'id'            => 'pitchpro-edit-campaign',
+            	'description'   => '',
+                    'class'         => '',
+            	'before_widget' => '<li id="%1$s" class="widget %2$s">',
+            	'after_widget'  => '</li>',
+            	'before_title'  => '<h2 class="widgettitle">',
+            	'after_title'   => '</h2>' ));
+        }
+
         public function custom_menue(){
             add_submenu_page('edit.php?post_type=' . PitchPro_App::POSTTYPE, 'Campaign', 'Campaign', 'manage_options', 'edit.php?post_type=' . SELF::POSTTYPE);
         }
 
         public function gform_after_submission( $entry, $form ){
+
             $post = get_post( $entry['post_id'] );
+            if( $form['title'] == 'Campaign' ){
+                $campaign_files = null;
+                foreach( $form['fields'] as $field){
+                    if( $field->inputName == 'campaign_files' ){
+                        $campaign_files = $entry[ $field->id ];
+                    }
+                }
+
+                if( !empty($campaign_files) ){
+                    $campaign_files = json_decode($campaign_files);
+                    echo count($campaign_files);
+                    print_r($campaign_files);
+                    foreach( $campaign_files as $key => $file ){
+
+                        update_post_meta( $post->ID, 'campaign_files_' . $key . '_title', '', true);
+                        update_post_meta( $post->ID, '_campaign_files_' . $key . '_title', 'field_57de2d13e23f2', true);
+                        update_post_meta( $post->ID, 'campaign_files_' . $key . '_file', $file, true);
+                        update_post_meta( $post->ID, '_campaign_files_' . $key . '_file', 'field_57de23dcdbfa0', true);
+                    }
+                    update_post_meta( $post->ID, 'campaign_files', count($campaign_files), true);
+                    update_post_meta( $post->ID, '_campaign_files', 'field_57bdb41e20a49', true);
+                }
+            }
             if( self::POSTTYPE == $post->post_type && ( empty($post->post_name) || !is_valid_guid($post->post_name) ) ){
                 $post->post_name = create_unique_GUIDv4();
                 wp_update_post( $post );
@@ -94,6 +135,20 @@ if( !class_exists('PitchPro_Campaign') ){
                 $campaign_id = $query_campaign->post_count > 0 ? $query_campaign->posts[0]->ID : null;
             }
             return $campaign_id;
+        }
+
+        public static function retrieve( $guid = null, $use_id = false ){
+            $args = array(
+                'post_type' => self::POSTTYPE,
+                'post_status' => array('publish','draft','pending','expire')
+            );
+            if( $use_id ){
+                $args['ID'] = $guid;
+            } else {
+                $args['name'] = $guid;
+            }
+            $wp_query = new WP_Query($args);
+            return $wp_query->post;
         }
 
         public function get_all_campaigns( $published = true ){

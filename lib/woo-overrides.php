@@ -67,3 +67,80 @@ function woo_author_box () {
 </aside>
 <?php
 } // End woo_author_box
+
+
+function woo_get_layout() {
+
+	global $post, $wp_query, $woo_options;
+
+	// Reset the query
+	if ( is_main_query() ) {
+		wp_reset_query();
+	}
+
+	// Set default global layout
+	$layout = 'two-col-left';
+	if ( '' != get_option( 'woo_layout' ) ) {
+		$layout = get_option( 'woo_layout' );
+	}
+
+	// Single post layout
+	if ( is_singular() ) {
+		// Get layout setting from single post Custom Settings panel
+		if ( '' != get_post_meta( $post->ID, 'layout', true ) ) {
+			$layout = get_post_meta( $post->ID, 'layout', true );
+
+		} elseif ( 'pitchpro_campaign' == get_post_type() ) {
+
+			$layout = 'two-col-left';
+
+
+		// Portfolio single post layout option.
+		} elseif ( 'portfolio' == get_post_type() ) {
+			if ( '' != get_option( 'woo_portfolio_layout_single' ) ) {
+				$layout = get_option( 'woo_portfolio_layout_single' );
+			}
+
+		} elseif ( 'project' == get_post_type() ) {
+			if ( '' != get_option( 'woo_projects_layout_single' ) ) {
+				$layout = get_option( 'woo_projects_layout_single' );
+			} else {
+				$layout = get_option( 'woo_layout' );
+			}
+		}
+	}
+
+	// Portfolio gallery layout option.
+	if ( is_tax( 'portfolio-gallery' ) || is_post_type_archive( 'portfolio' ) || is_page_template( 'template-portfolio.php' ) ) {
+		if ( '' != get_option( 'woo_portfolio_layout' ) ) {
+			$layout = get_option( 'woo_portfolio_layout' );
+		}
+	}
+
+	// Projects gallery layout option.
+	if ( is_tax( 'project-category' ) || is_post_type_archive( 'project' ) ) {
+		if ( '' != get_option( 'woo_projects_layout' ) ) {
+			$layout = get_option( 'woo_projects_layout' );
+		} else {
+			$layout = get_option( 'woo_layout' );
+		}
+	}
+
+	// WooCommerce Layout
+	if ( is_woocommerce_activated() && is_woocommerce() ) {
+		// Set defaul layout
+		if ( '' != get_option( 'woo_wc_layout' ) ) {
+			$layout = get_option( 'woo_wc_layout' );
+		}
+		// WooCommerce single post/page
+		if ( is_singular() ) {
+			// Get layout setting from single post Custom Settings panel
+			if ( '' != get_post_meta( $post->ID, 'layout', true ) ) {
+				$layout = get_post_meta( $post->ID, 'layout', true );
+			}
+		}
+	}
+
+	return $layout;
+
+} // End woo_get_layout()

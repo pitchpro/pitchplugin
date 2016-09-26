@@ -30,7 +30,7 @@ get_header();
             </section><!-- /#main -->
             <?php woo_main_after(); ?>
 
-            <?php get_sidebar(); ?>
+            <?php get_sidebar('pitchpro-edit-campaign'); ?>
 
 		</div><!-- /#main-sidebar-container -->
 

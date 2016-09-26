@@ -19,6 +19,24 @@ get_header();
 
 ?>
 <section class="entry">
+<div>
+	<p>Filter by:</p>
+	<p>
+	Status:
+		<select>
+			<option>Select status</option>
+		</select>
+	Payment:
+		<select>
+			<option>Select payment</option>
+		</select>
+	Campaign:
+		<select>
+			<option>Select campaign</option>
+		</select>
+	<button>Filter</button>
+</p>
+</div>
 <table>
     <tr>
         <th>Date</th>
@@ -26,7 +44,7 @@ get_header();
         <th>Campaign</th>
         <th>Satus</th>
         <th>Payment</th>
-        <th>Bounty</th>
+        <th>Incentive</th>
     </tr>
 <?php
         while (have_posts()) : the_post(); $count++;
@@ -37,10 +55,10 @@ get_header();
              global $woo_options;
             ?>
             <tr <?php post_class(); ?>>
-                    <td>Date</td>
+                    <td>created, edited, or sent?</td>
                     <td><a href="<?php the_permalink(); ?>"><?php the_field( 'send_to', get_the_ID()); ?></a></td>
                     <td><a href="<?php echo get_permalink( $associated_campaign ); ?>"><?php echo get_the_title( $associated_campaign ); ?></a></td>
-                    <td><?php echo get_post_status(); ?></td>
+                    <td><?php echo PitchPro_Pitch::$pitch_status[ get_post_status() ]; ?></td>
                     <td><?php the_field( 'payment_status', get_the_ID()); ?></td>
                     <td>$<?php echo money_format('%i', get_field( 'payout_amount', get_the_ID())); ?></td>
         </tr>
