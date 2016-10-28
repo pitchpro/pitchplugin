@@ -1,6 +1,7 @@
 <?php
 
 get_header();
+global $pitchpro_payment_status_current;
 ?>
 
     <!-- #content Starts -->
@@ -19,32 +20,41 @@ get_header();
 
 ?>
 <section class="entry">
-<div>
+<form id="filter_pitches" method="get">
 	<p>Filter by:</p>
 	<p>
 	Status:
-		<select>
+		<select name="status">
 			<option>Select status</option>
+			<?php foreach (PitchPro_Pitch::$pitch_status as $status => $label ) : ?>
+			<option value="<?php echo $status; ?>" <?php selected( @$_REQUEST['status'], $status ); ?>><?php echo $label; ?></option>
+			<?php endforeach; ?>
 		</select>
 	Payment:
-		<select>
-			<option>Select payment</option>
-		</select>
+		<?php
+
+		$pitchpro_payment_status_current = @$_REQUEST['payment'];
+		pitchpro_get_template_part( 'select', 'pitch-status', false );
+
+		?>
 	Campaign:
-		<select>
+		<select name="campaign">
 			<option>Select campaign</option>
+			<?php foreach (PitchPro_Campaign::get_all_campaigns() as $campaign ) : ?>
+			<option value="<?php echo $campaign->post_name; ?>" <?php selected( @$_REQUEST['campaign'], $campaign->post_name ); ?>><?php echo $campaign->post_title; ?></option>
+			<?php endforeach; ?>
 		</select>
-	<button>Filter</button>
+	<button type="submit" value="Filter" form="filter_pitches">Filter</button>
 </p>
-</div>
+</form>
 <table>
     <tr>
-        <th>Date</th>
-        <th>Target</th>
+        <th>Pitched To</th>
         <th>Campaign</th>
         <th>Satus</th>
         <th>Payment</th>
         <th>Incentive</th>
+		<th class="sortable" data-sort-type="created-on">Created On</th>
     </tr>
 <?php
         while (have_posts()) : the_post(); $count++;
@@ -55,13 +65,20 @@ get_header();
              global $woo_options;
             ?>
             <tr <?php post_class(); ?>>
-                    <td>created, edited, or sent?</td>
                     <td><a href="<?php the_permalink(); ?>"><?php the_field( 'send_to', get_the_ID()); ?></a></td>
                     <td><a href="<?php echo get_permalink( $associated_campaign ); ?>"><?php echo get_the_title( $associated_campaign ); ?></a></td>
                     <td><?php echo PitchPro_Pitch::$pitch_status[ get_post_status() ]; ?></td>
-                    <td><?php the_field( 'payment_status', get_the_ID()); ?></td>
+                    <td>
+						<?php
+
+						$pitchpro_payment_status_current = get_field( 'payment_status', get_the_ID());
+						pitchpro_get_template_part( 'select', 'pitch-status', false );
+
+						?>
+					</td>
                     <td>$<?php echo money_format('%i', get_field( 'payout_amount', get_the_ID())); ?></td>
-        </tr>
+                    <td><?php echo get_the_date('m-d-Y'); ?></td>
+	        </tr>
             <?php
 
         endwhile;

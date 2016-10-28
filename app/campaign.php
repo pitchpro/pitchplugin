@@ -10,7 +10,8 @@ if( !class_exists('PitchPro_Campaign') ){
         public $path;
         static $campaign_status = array(
             'publish' => 'Active',
-            'expire' => 'Expired'
+            'expire' => 'Expired',
+            'archive' => 'Archived'
         );
         protected $postTypeArgs = array(
 			'public'          => true,
@@ -53,6 +54,7 @@ if( !class_exists('PitchPro_Campaign') ){
             add_action( 'widgets_init', array( $this, 'register_sidebar' ) );
             add_action( 'admin_menu', array( $this, 'custom_menue' ), 10 );
             add_filter( 'wp_unique_post_slug', array( $this, 'unique_guid_post_name' ), 10, 4 );
+            add_action( 'admin_footer-post.php', array( $this, 'custom_post_status_list' ) );
             add_filter( 'template_include', array( $this, 'template_include' ), 99 );
             add_action( 'template_redirect', array( $this, 'template_redirect' ), 20 );
             add_action( 'gform_after_submission', array( $this, 'gform_after_submission' ), 20, 2 );
@@ -65,6 +67,33 @@ if( !class_exists('PitchPro_Campaign') ){
         public function register_post_types(){
             register_post_type( self::POSTTYPE, apply_filters( 'pitchpro/campaign_post_types', $this->postTypeArgs ) );
             add_rewrite_rule( self::URL_PREFIX . '(.+?)(?:/([0-9]+))?/?$', 'index.php?' . self::POSTTYPE . '=$matches[1]&page=$matches[2]', 'top' );
+        }
+
+        // TODO fix this list
+        public function custom_post_status_list(){
+             global $post;
+             $complete = '';
+             $label = '';
+             if($post->post_type == self::POSTTYPE){
+                  if($post->post_status == 'expire'){
+                       $expired_complete = ' selected="selected"';
+                       $expired_label = '<span id="post-status-display"> Expired</span>';
+                  }
+                  if($post->post_status == 'archive'){
+                       $archive_complete = ' selected="selected"';
+                       $archive_label = '<span id="post-status-display"> Archived</span>';
+                  }
+
+                  // TODO optimize this and fix the errors when undefined
+                  ?>
+                  <script>
+                  jQuery(document).ready(function($){
+                       $("select#post_status").append('<option value="expire" <?php echo $expired_complete; ?>>Expired</option><option value="sent" <?php echo $expired_complete; ?>>Sent</option><option value="archive" <?php echo $archive_complete; ?>>Claimed</option>');
+                       $(".misc-pub-section label").append('<?php echo $expired_label . $archive_label; ?>');
+                  });
+                  </script>
+                  <?php
+             }
         }
 
         public function register_sidebar(){
@@ -96,8 +125,7 @@ if( !class_exists('PitchPro_Campaign') ){
 
                 if( !empty($campaign_files) ){
                     $campaign_files = json_decode($campaign_files);
-                    echo count($campaign_files);
-                    print_r($campaign_files);
+                    
                     foreach( $campaign_files as $key => $file ){
 
                         update_post_meta( $post->ID, 'campaign_files_' . $key . '_title', '', true);
@@ -125,7 +153,7 @@ if( !class_exists('PitchPro_Campaign') ){
             return $slug;
         }
 
-        public function get_campaign_id_by_guid( $guid = null ){
+        public static function get_campaign_id_by_guid( $guid = null ){
             $campaign_id = null;
             if( !is_null( $guid ) ){
                 $query_campaign = new WP_Query(array(
@@ -151,7 +179,7 @@ if( !class_exists('PitchPro_Campaign') ){
             return $wp_query->post;
         }
 
-        public function get_all_campaigns( $published = true ){
+        public static function get_all_campaigns( $published = true ){
             $query = new WP_Query(array(
                 'post_type' => self::POSTTYPE
             ));
@@ -202,19 +230,39 @@ if( !class_exists('PitchPro_Campaign') ){
 
             foreach ( $form['fields'] as &$field ) {
 
-                if ( $field->type != 'post_custom_field' || strpos( $field->cssClass, 'gravity-campaign-list' ) === false ) {
-                    continue;
+                if ( $field->type == 'post_custom_field' && strpos( $field->cssClass, 'gravity-campaign-list' ) !== false ) {
+                    $posts = self::get_all_campaigns();
+                    $choices = array();
+
+                    foreach ( $posts as $post ) {
+                        $choices[] = array( 'text' => $post->post_title, 'value' => $post->ID );
+                    }
+
+                    $field->placeholder = 'Select a campaign';
+                    $field->choices = $choices;
+                } else if( $field->type == 'html' && strpos( $field->cssClass, 'downloadable-files' ) !== false ){
+                    global $post;
+                    if ( get_post_type( $post ) == self::POSTTYPE ) {
+                        $file_list = get_field('campaign_files', $post->ID );
+                        if( count($file_list) > 0 ) {
+                            ob_start();
+                            ?>
+                            <label class="gfield_label"><?php echo $field->label; ?></label>
+                            <div class="ginput_container">
+                                <ul>
+                                <?php foreach( $file_list as $item ) : ?>
+                                    <li><a href="<?php echo $item['file']; ?>" target="_blank"><?php echo basename($item['file']); ?></a></li>
+                                <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php
+                            $field->content = ob_get_clean();
+                        }
+
+                    }
                 }
 
-                $posts = self::get_all_campaigns();
-                $choices = array();
 
-                foreach ( $posts as $post ) {
-                    $choices[] = array( 'text' => $post->post_title, 'value' => $post->ID );
-                }
-
-                $field->placeholder = 'Select a campaign';
-                $field->choices = $choices;
 
             }
 

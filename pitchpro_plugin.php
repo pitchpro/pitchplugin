@@ -45,7 +45,8 @@ pitchpro_file_loader([
 	'lib/bootstrap',
 	'lib/shortcodes',
 	'lib/startup',
-	'lib/pre-get-posts'
+	'lib/pre-get-posts',
+	'lib/ajax'
 ]);
 
 if( function_exists('acf_add_options_page') ) {

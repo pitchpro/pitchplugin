@@ -19,6 +19,11 @@ function pitchpro_shortcode($atts){
         case 'pitch-stats':
             $shortcode_template = PITCHPRO_PATH . 'template/shortcodes/pitch-stats-block.php';
             break;
+        case 'pitch-email':
+            global $post;
+            $post = $pitch;
+            $shortcode_template = PITCHPRO_PATH . 'template/shortcodes/email.php';
+            break;
         case 'send-pitch-button':
             $shortcode_args = array(
                 'post_type' => PitchPro_Campaign::POSTTYPE
@@ -100,6 +105,13 @@ function pitchpro_field_shortcode( $atts ){
     ob_start();
     global $post;
     switch( $properties['id'] ){
+        case 'org_logo':
+            $campaign_id = get_field( 'associated_campaign', $post->ID );
+            $organization_id = get_field( 'associated_org', $campaign_id );
+            $logo = get_field( 'org_logo', $organization_id );
+            $more_info_url = get_field( 'more_info_url', $organization_id );
+            printf( '<a href="%s" target="_blank"><img src="%s" /></a>', $more_info_url, $logo['sizes']['medium_large'] );
+            break;
         case 'url_pitch':
             echo get_permalink( $post->ID );
             break;

@@ -23,12 +23,12 @@ get_header();
 <section class="entry">
 <table>
     <tr>
-        <th>Date</th>
-		<?php if( $user_has_multi_org ) : ?>
+		<?php /* if( $user_has_multi_org ) : ?>
 			<th>Organization</th>
-		<?php endif; ?>
+		<?php endif; */ ?>
         <th>Campaign</th>
         <th>Satus</th>
+        <th>Pitches</th>
         <th>&nbsp;</th>
     </tr>
 <?php
@@ -36,20 +36,19 @@ get_header();
 
             $associated_org = get_field( "associated_org", get_the_ID() );
 
-
              global $woo_options;
             ?>
             <tr <?php post_class(); ?>>
-                    <td>Date</td>
-					<?php if( $user_has_multi_org ) : ?>
+					<?php /* if( $user_has_multi_org ) : ?>
 						<td>
 							<?php if( $associated_org ) : ?>
 							<a href="<?php echo get_permalink( $associated_org ); ?>"><?php echo get_the_title( $associated_org ); ?></a>
 							<?php endif; ?>
 						</td>
-					<?php endif; ?>
+					<?php endif; */ ?>
                     <td><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></td>
                     <td><?php echo PitchPro_Campaign::$campaign_status[ get_post_status() ]; ?></td>
+                    <td><a href="/app/pitches/?campaign=<?php echo $post->post_name; ?>"><?php echo PitchPro_Pitch::get_count_associated_to_campaign( get_the_ID() ); ?></a></td>
                     <td><a href="<?php echo get_permalink( get_page_by_path('pitch-create', OBJECT, PitchPro_App::POSTTYPE ) ); ?>?c=<?php echo get_the_ID(); ?>">Create Pitch</a></td>
         </tr>
             <?php

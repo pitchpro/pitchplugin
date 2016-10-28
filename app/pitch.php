@@ -9,6 +9,12 @@ if( !class_exists('PitchPro_Pitch') ){
 
         private static $_this;
         public $path;
+        static $payment_status = array(
+            'pending' => 'Pending',
+            'paid' => 'Paid',
+            'failed' => 'Failed',
+            'disput' => 'Disputed'
+        );
         static $pitch_status = array(
             'publish' => 'Not Sent',
             'sent' => 'Sent',

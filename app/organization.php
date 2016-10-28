@@ -94,6 +94,22 @@ if( !class_exists('PitchPro_Organization') ){
             return $org_list;
         }
 
+        // TODO refactor to be more effecient
+        // public function get_organization_by_campaign_id( $campaign_id ){
+        //     $org = new WP_Query(array(
+        //         'post_type' => PitchPro_Campaign::POSTTYPE,
+        //         'posts_per_page'	=> 1,
+        //         'meta_query'  	=> array(
+        //             array(
+        //                 'key'           => 'associated_users',
+        //                 'value'         => '"'.get_current_user_id().'"',//quotes to make sure user ID 23 does not match user ID 123, 230 etc
+        //                 'compare'       => 'LIKE'
+        //             )
+        //         )
+        //     ));
+        //     return $org->post;
+        // }
+
         public function gforms_populate_posts( $form ){
             // if ( $form['title'] != "Campaign" ) return $form;
 

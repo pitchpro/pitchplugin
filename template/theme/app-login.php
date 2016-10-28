@@ -11,7 +11,7 @@
 	<section class="entry">
 	    <?php
 
-        echo do_shortcode('[userpro template="login" login_redirect="http://pitch.pro.dev/app/dashboard/" login_button_secondary="" ]');
+        echo do_shortcode('[userpro template="login" login_redirect="/app/dashboard/" login_button_secondary="" ]');
 
 	    ?>
 	</section><!-- /.entry -->
