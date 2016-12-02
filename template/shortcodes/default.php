@@ -1,1 +1,0 @@
-Shortcode default template

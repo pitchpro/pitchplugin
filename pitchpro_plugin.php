@@ -2,7 +2,7 @@
 /*
 Plugin Name: Pitch Pro
 Description: The best tool for creating pitches
-Version: 0.0.1
+Version: 1.0.1
 Author: Imagine Simplicity, Timothy Wood @codearachnid
 Author URI: http://www.imaginesimplicity.com
 Text Domain: pitchpro
